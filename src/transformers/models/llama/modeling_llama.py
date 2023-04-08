@@ -167,6 +167,7 @@ class LlamaAttention(nn.Module):
         self.num_heads = config.num_attention_heads
         self.head_dim = self.hidden_size // self.num_heads
         self.max_position_embeddings = config.max_position_embeddings
+        print(" LlamaAttention __init__ ")
 
         if (self.head_dim * self.num_heads) != self.hidden_size:
             raise ValueError(
@@ -180,6 +181,7 @@ class LlamaAttention(nn.Module):
         self.rotary_emb = LlamaRotaryEmbedding(self.head_dim, max_position_embeddings=self.max_position_embeddings)
 
     def _shape(self, tensor: torch.Tensor, seq_len: int, bsz: int):
+        print(" LlamaAttention _shape ")
         return tensor.view(bsz, seq_len, self.num_heads, self.head_dim).transpose(1, 2).contiguous()
 
     def forward(
@@ -251,14 +253,22 @@ class LlamaAttention(nn.Module):
 class LlamaDecoderLayer(nn.Module):
     def __init__(self, config: LlamaConfig):
         super().__init__()
+        print(" -------------- LlamaDecoderLayer ")
         self.hidden_size = config.hidden_size
         self.self_attn = LlamaAttention(config=config)
+        print(" -------------- LlamaAttention ")
+        print(self.self_attn)
+
         self.mlp = LlamaMLP(
             hidden_size=self.hidden_size,
             intermediate_size=config.intermediate_size,
             hidden_act=config.hidden_act,
         )
+        print(" -------------- LlamaMLP ")
+        print(self.mlp)
         self.input_layernorm = LlamaRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
+        print(" -------------- input_layernorm ")
+        print(self.input_layernorm)
         self.post_attention_layernorm = LlamaRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
 
     def forward(
