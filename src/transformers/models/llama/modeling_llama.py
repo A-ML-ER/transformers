@@ -1052,8 +1052,6 @@ class LlamaForCausalLM(LlamaPreTrainedModel):
             }
         )
         print("--- position_ids  ,  past_key_values  ==")
-        print(position_ids)
-        print(past_key_values)
         print("return prepare_inputs_for_generation-----  model_inputs")
         return model_inputs
 
