@@ -70,6 +70,7 @@ class ChatGLMConfig(PretrainedConfig):
             prefix_projection=False,
             **kwargs
     ):
+        print("")
         self.num_layers = num_layers
         self.vocab_size = vocab_size
         self.hidden_size = hidden_size
