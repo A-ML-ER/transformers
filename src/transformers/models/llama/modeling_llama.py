@@ -707,7 +707,74 @@ class LlamaForCausalLM(LlamaPreTrainedModel):
         response = self.process_response(response)
         history = history + [(query, response)]
         return response, history
-    
+
+    def prepare_inputs_for_generation(
+            self,
+            input_ids: torch.LongTensor,
+            past: Optional[torch.Tensor] = None,
+            past_key_values: Optional[torch.Tensor] = None,
+            attention_mask: Optional[torch.Tensor] = None,
+            position_ids: Optional[torch.Tensor] = None,
+            **kwargs
+    ) -> dict:
+        batch_size, seq_length = input_ids.shape
+        MASK, gMASK = self.config.mask_token_id, self.config.gmask_token_id
+        mask_token = gMASK if gMASK in input_ids else MASK
+        use_gmask = True if gMASK in input_ids else False
+        seqs = input_ids.tolist()
+        mask_positions = [seq.index(mask_token) for seq in seqs]
+
+        # only last token for input_ids if past is not None
+        if past is not None or past_key_values is not None:
+            last_token = input_ids[:, -1].unsqueeze(-1)
+            if attention_mask is not None and attention_mask.dtype == torch.bool:
+                attention_mask = attention_mask[:, :, -1:]
+            else:
+                attention_mask = None
+            if position_ids is not None:
+                position_ids = position_ids[..., -1:]
+            else:
+                context_lengths = [seq.index(self.config.bos_token_id) for seq in seqs]
+                if self.position_encoding_2d:
+                    position_ids = torch.tensor(
+                        [[mask_position, seq_length - context_length] for mask_position, context_length in
+                         zip(mask_positions, context_lengths)], dtype=torch.long, device=input_ids.device).unsqueeze(-1)
+                else:
+                    position_ids = torch.tensor([mask_position for mask_position in mask_positions], dtype=torch.long,
+                                                device=input_ids.device).unsqueeze(-1)
+
+            if past is None:
+                past = past_key_values
+            return {
+                "input_ids": last_token,
+                "past_key_values": past,
+                "position_ids": position_ids,
+                "attention_mask": attention_mask
+            }
+        else:
+            if attention_mask is not None and attention_mask.dtype != torch.bool:
+                logger.warning_once(f"The dtype of attention mask ({attention_mask.dtype}) is not bool")
+                attention_mask = None
+            if attention_mask is None:
+                attention_mask = self.get_masks(
+                    input_ids,
+                    device=input_ids.device
+                )
+            if position_ids is None:
+                position_ids = self.get_position_ids(
+                    input_ids,
+                    device=input_ids.device,
+                    mask_positions=mask_positions,
+                    gmask=use_gmask
+                )
+
+            return {
+                "input_ids": input_ids,
+                "past_key_values": past,
+                "position_ids": position_ids,
+                "attention_mask": attention_mask
+            }
+
     @torch.no_grad()
     def stream_chat(self, tokenizer, query: str, history: List[Tuple[str, str]] = None, max_length: int = 2048,
                     do_sample=True, top_p=0.7, temperature=0.95, logits_processor=None, **kwargs):
