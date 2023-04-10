@@ -877,11 +877,7 @@ class LlamaForCausalLM(LlamaPreTrainedModel):
 
         unfinished_sequences = input_ids.new(input_ids.shape[0]).fill_(1)
         scores = None
-        count = 0
         while True:
-            print("  while True:  model_inputs ")
-            count = count + 1
-            print(f" ---  count = {count}")
             model_inputs = self.prepare_inputs_for_generation(input_ids, **model_kwargs)
 
             # forward pass to get next token
@@ -911,8 +907,7 @@ class LlamaForCausalLM(LlamaPreTrainedModel):
                 outputs, model_kwargs, is_encoder_decoder=self.config.is_encoder_decoder
             )
             unfinished_sequences = unfinished_sequences.mul((sum(next_tokens != i for i in eos_token_id)).long())
-            print("---------  unfinished_sequences")
-            print(unfinished_sequences)
+
             # stop when each sentence is finished, or if we exceed the maximum length
             if unfinished_sequences.max() == 0 or stopping_criteria(input_ids, scores):
                 break
