@@ -718,8 +718,6 @@ class LlamaForCausalLM(LlamaPreTrainedModel):
             **kwargs
     ) -> dict:
         batch_size, seq_length = input_ids.shape
-        print(" ------- prepare_inputs_for_generation")
-        print(self.config.mask_token_id)
         MASK, gMASK = self.config.mask_token_id, self.config.gmask_token_id
         mask_token = gMASK if gMASK in input_ids else MASK
         use_gmask = True if gMASK in input_ids else False
@@ -728,7 +726,6 @@ class LlamaForCausalLM(LlamaPreTrainedModel):
 
         # only last token for input_ids if past is not None
         if past is not None or past_key_values is not None:
-            print("past is not None or past_key_values is not None ----- # only last token for input_ids if past is not None")
             last_token = input_ids[:, -1].unsqueeze(-1)
             if attention_mask is not None and attention_mask.dtype == torch.bool:
                 attention_mask = attention_mask[:, :, -1:]
@@ -755,7 +752,6 @@ class LlamaForCausalLM(LlamaPreTrainedModel):
                 "attention_mask": attention_mask
             }
         else:
-            print("past is None?? or past_key_values is None? ? ----- # only last token for input_ids if past is not None")
             if attention_mask is not None and attention_mask.dtype != torch.bool:
                 logger.warning_once(f"The dtype of attention mask ({attention_mask.dtype}) is not bool")
                 attention_mask = None
@@ -782,7 +778,6 @@ class LlamaForCausalLM(LlamaPreTrainedModel):
     @torch.no_grad()
     def stream_chat(self, tokenizer, query: str, history: List[Tuple[str, str]] = None, max_length: int = 2048,
                     do_sample=True, top_p=0.7, temperature=0.95, logits_processor=None, **kwargs):
-        print(" ---------- llama   stream_chat ")
         if history is None:
             history = []
         if logits_processor is None:
@@ -817,13 +812,10 @@ class LlamaForCausalLM(LlamaPreTrainedModel):
             **kwargs,
     ):
         batch_size, input_ids_seq_length = input_ids.shape[0], input_ids.shape[-1]
-        print(" ---------- llama   stream_generate ")
         if generation_config is None:
             generation_config = self.generation_config
         generation_config = copy.deepcopy(generation_config)
         model_kwargs = generation_config.update(**kwargs)
-        print("-------- generation_config ------- ")
-        print(generation_config)
         bos_token_id, eos_token_id = generation_config.bos_token_id, generation_config.eos_token_id
 
         if isinstance(eos_token_id, int):
@@ -867,8 +859,6 @@ class LlamaForCausalLM(LlamaPreTrainedModel):
             prefix_allowed_tokens_fn=prefix_allowed_tokens_fn,
             logits_processor=logits_processor,
         )
-        print("sucess  _get_logits_processor ")
-        print(logits_processor)
 
         stopping_criteria = self._get_stopping_criteria(
             generation_config=generation_config, stopping_criteria=stopping_criteria
@@ -1022,12 +1012,10 @@ class LlamaForCausalLM(LlamaPreTrainedModel):
     def prepare_inputs_for_generation(
         self, input_ids, past_key_values=None, attention_mask=None, inputs_embeds=None, **kwargs
     ):
-        print("-----  prepare_inputs_for_generation ------ " )
         if past_key_values:
             input_ids = input_ids[:, -1:]
 
         position_ids = kwargs.get("position_ids", None)
-        print(f"-----  position_ids : {position_ids}")
         if attention_mask is not None and position_ids is None:
             # create position_ids on the fly for batch generation
             position_ids = attention_mask.long().cumsum(-1) - 1
@@ -1049,8 +1037,6 @@ class LlamaForCausalLM(LlamaPreTrainedModel):
                 "attention_mask": attention_mask,
             }
         )
-        print("--- position_ids  ,  past_key_values  ==")
-        print("return prepare_inputs_for_generation-----  model_inputs")
         return model_inputs
 
     @staticmethod
