@@ -877,8 +877,11 @@ class LlamaForCausalLM(LlamaPreTrainedModel):
 
         unfinished_sequences = input_ids.new(input_ids.shape[0]).fill_(1)
         scores = None
+        count = 0
         while True:
             print("  while True:  model_inputs ")
+            count = count + 1
+            print(f" ---  count = {count}")
             model_inputs = self.prepare_inputs_for_generation(input_ids, **model_kwargs)
 
             # forward pass to get next token
