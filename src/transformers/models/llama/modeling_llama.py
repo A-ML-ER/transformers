@@ -718,6 +718,8 @@ class LlamaForCausalLM(LlamaPreTrainedModel):
             **kwargs
     ) -> dict:
         batch_size, seq_length = input_ids.shape
+        print(" ------- prepare_inputs_for_generation")
+        print(self.config.mask_token_id)
         MASK, gMASK = self.config.mask_token_id, self.config.gmask_token_id
         mask_token = gMASK if gMASK in input_ids else MASK
         use_gmask = True if gMASK in input_ids else False
@@ -726,6 +728,7 @@ class LlamaForCausalLM(LlamaPreTrainedModel):
 
         # only last token for input_ids if past is not None
         if past is not None or past_key_values is not None:
+            print("past is not None or past_key_values is not None ----- # only last token for input_ids if past is not None")
             last_token = input_ids[:, -1].unsqueeze(-1)
             if attention_mask is not None and attention_mask.dtype == torch.bool:
                 attention_mask = attention_mask[:, :, -1:]
@@ -752,6 +755,7 @@ class LlamaForCausalLM(LlamaPreTrainedModel):
                 "attention_mask": attention_mask
             }
         else:
+            print("past is None?? or past_key_values is None? ? ----- # only last token for input_ids if past is not None")
             if attention_mask is not None and attention_mask.dtype != torch.bool:
                 logger.warning_once(f"The dtype of attention mask ({attention_mask.dtype}) is not bool")
                 attention_mask = None
@@ -1047,8 +1051,10 @@ class LlamaForCausalLM(LlamaPreTrainedModel):
                 "attention_mask": attention_mask,
             }
         )
-        print("-----  model_inputs")
-        print(model_inputs)
+        print("--- position_ids  ,  past_key_values  ==")
+        print(position_ids)
+        print(past_key_values)
+        print("return prepare_inputs_for_generation-----  model_inputs")
         return model_inputs
 
     @staticmethod
